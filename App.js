@@ -112,5 +112,3 @@ const styles = StyleSheet.create({
 });
 
 export default StopwatchApp;
-
-//npx expo start
