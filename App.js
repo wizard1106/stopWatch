@@ -1,40 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+//Stop Watch 
 
-const StopwatchApp = () => {
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, Text, View, TouchableOpacity, FlatList } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+
+const TimerApp = () => {
   const [time, setTime] = useState(0);
-  const [running, setRunning] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [laps, setLaps] = useState([]);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    let timer;
-
-    if (running) {
-      timer = setInterval(() => {
-        setTime((prevTime) => prevTime + 10); // Update every 10 milliseconds
+    if (isRunning) {
+      timerRef.current = setInterval(() => {
+        setTime((prevTime) => prevTime + 1);
       }, 10);
+    } else {
+      clearInterval(timerRef.current);
     }
+    return () => clearInterval(timerRef.current);
+  }, [isRunning]);
 
-    return () => {
-      clearInterval(timer); // Cleanup the interval on component unmount or when paused
-    };
-  }, [running]);
-
-  const handleStart = () => {
-    setRunning(true);
+  const startTimer = () => {
+    setIsRunning(true);
   };
 
-  const handlePause = () => {
-    setRunning(false);
+  const pauseTimer = () => {
+    setIsRunning(false);
   };
 
-  const handleStop = () => {
-    setRunning(false);
+  const stopTimer = () => {
+    setIsRunning(false);
     setTime(0);
     setLaps([]);
   };
 
-  const handleLap = () => {
+  const lapTimer = () => {
     setLaps((prevLaps) => [...prevLaps, time]);
   };
 
@@ -42,46 +43,47 @@ const StopwatchApp = () => {
     setLaps([]);
   };
 
+  const renderLapItem = ({ item, index }) => (
+    <Text style={styles.lapItem}>{`Lap ${index + 1}: ${formatTime(item)}`}</Text>
+  );
 
-
-  // Convert milliseconds to hours, minutes, seconds, and milliseconds
-  const hours = Math.floor(time / 3600000);
-  const minutes = Math.floor((time % 3600000) / 60000);
-  const seconds = Math.floor((time % 60000) / 1000);
-  const milliseconds = time % 1000;
+  const formatTime = (time) => {
+    const minutes = Math.floor(time / 6000);
+    const seconds = Math.floor((time % 6000) / 100);
+    const milliseconds = (time % 6000) % 100;
+    return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}.${milliseconds < 10 ? '0' : ''}${milliseconds}`;
+  };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.timeText}>{`${hours}:${minutes}:${seconds}.${milliseconds}`}</Text>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={handleStart}>
-          <Text>Start</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={handlePause}>
-          <Text>Pause</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={handleStop}>
+      <Text style={styles.timer}>{formatTime(time)}</Text>
+      <View style={styles.buttonsContainer}>
+        {!isRunning ? (
+          <TouchableOpacity style={styles.button} onPress={startTimer}>
+            <Text>Start</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.button} onPress={pauseTimer}>
+            <Text>Pause</Text>
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity style={styles.button} onPress={stopTimer}>
           <Text>Stop</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={styles.button} onPress={handleLap}>
+        <TouchableOpacity style={styles.button} onPress={lapTimer}>
           <Text>Lap</Text>
         </TouchableOpacity>
-
         <TouchableOpacity style={styles.button} onPress={clearLaps}>
           <Text>Clear Laps</Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.lapContainer}>
-        <Text>Laps:</Text>
-        {laps.map((lap, index) => (
-          <Text key={index}>{`Lap ${index + 1}: ${lap}`}</Text>
-        ))}
-      </View>
+      <FlatList
+        data={laps}
+        renderItem={renderLapItem}
+        keyExtractor={(item, index) => index.toString()}
+        style={styles.lapList}
+      />
+      <StatusBar style="auto" />
     </View>
   );
 };
@@ -91,24 +93,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
   },
-  timeText: {
-    fontSize: 20,
+  timer: {
+    fontSize: 50,
     fontWeight: 'bold',
+    marginBottom: 20,
   },
-  buttonContainer: {
+  buttonsContainer: {
     flexDirection: 'row',
-    marginTop: 20,
+    marginBottom: 20,
   },
   button: {
     backgroundColor: '#DDDDDD',
-    padding: 10,
-    margin: 5,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginHorizontal: 5,
     borderRadius: 5,
   },
-  lapContainer: {
-    marginTop: 20,
+  lapList: {
+    flex: 1,
+    width: '100%',
+  },
+  lapItem: {
+    fontSize: 18,
+    paddingVertical: 5,
   },
 });
 
-export default StopwatchApp;
+export default TimerApp;
